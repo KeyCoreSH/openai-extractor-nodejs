@@ -17,6 +17,35 @@ const ExtractHandler = require('./handlers/extract.handler');
 const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
 
+// Rota GET para a raiz
+app.get('/', (req, res) => {
+    res.json({
+        name: "OpenAI Extractor",
+        version: "1.0.0",
+        description: "Sistema de captura e extração de dados de documentos PDF e imagens",
+        endpoints: {
+            extract: {
+                method: "POST",
+                path: "/extract",
+                description: "Extrai texto de documentos PDF ou imagens",
+                parameters: {
+                    pdfBase64: "string (base64 do arquivo)",
+                    filename: "string (nome do arquivo)"
+                }
+            }
+        },
+        features: [
+            "Extração de texto de PDFs",
+            "Extração de texto de imagens",
+            "Armazenamento em S3",
+            "Processamento assíncrono",
+            "Suporte a múltiplos formatos"
+        ],
+        status: "online",
+        uptime: process.uptime()
+    });
+});
+
 app.post('/extract', async (req, res) => {
     try {
         const { pdfBase64, filename } = req.body;
