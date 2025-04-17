@@ -1,7 +1,18 @@
+// Carregar variáveis de ambiente primeiro
+require('dotenv').config();
+
+// Verificar se as variáveis de ambiente necessárias estão definidas
+const requiredEnvVars = ['OPENAI_API_KEY', 'AWS_ACCESS_KEY_ID', 'AWS_SECRET_ACCESS_KEY', 'S3_BUCKET', 'S3_REGION'];
+const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
+
+if (missingEnvVars.length > 0) {
+    console.error('Variáveis de ambiente ausentes:', missingEnvVars);
+    process.exit(1);
+}
+
 const express = require('express');
 const bodyParser = require('body-parser');
 const ExtractHandler = require('./handlers/extract.handler');
-require('dotenv').config();
 
 const app = express();
 app.use(bodyParser.json({ limit: '10mb' }));
@@ -28,7 +39,14 @@ app.post('/extract', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3008;
 app.listen(PORT, () => {
     console.log(`Servidor rodando na porta ${PORT}`);
+    console.log('Variáveis de ambiente carregadas:', {
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY ? 'Definida' : 'Não definida',
+        AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID ? 'Definida' : 'Não definida',
+        AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY ? 'Definida' : 'Não definida',
+        S3_BUCKET: process.env.S3_BUCKET ? 'Definida' : 'Não definida',
+        S3_REGION: process.env.S3_REGION ? 'Definida' : 'Não definida'
+    });
 }); 
