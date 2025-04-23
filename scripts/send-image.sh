@@ -6,18 +6,32 @@ if [ ! -f "example/cnh-image.png" ]; then
     exit 1
 fi
 
-# Criar arquivo temporário para a imagem comprimida
-TEMP_IMAGE=$(mktemp).png
+# Definir o endpoint baseado no ambiente
+ENDPOINT=""
+if [ "$1" == "local" ]; then
+    ENDPOINT="http://localhost:3008"
+elif [ "$1" == "prod" ]; then
+    ENDPOINT="https://extract.logt.com.br"
+else
+    echo "Uso: $0 [local|prod]"
+    echo "  local - Usa o servidor local (http://localhost:3008)"
+    echo "  prod  - Usa o servidor de produção (https://extract.logt.com.br)"
+    exit 1
+fi
 
-# Comprimir a imagem
-convert "example/cnh-image.png" -resize 50% -quality 80 "$TEMP_IMAGE"
+# Criar arquivo temporário para a imagem na pasta /tmp
+TEMP_IMAGE="/tmp/image_$(date +%s).png"
+
+# Copiar a imagem original para o arquivo temporário
+cp "example/cnh-image.png" "$TEMP_IMAGE"
 
 # Verificar o tamanho do arquivo
 FILE_SIZE=$(stat -f%z "$TEMP_IMAGE")
-echo "Tamanho do arquivo comprimido: $FILE_SIZE bytes"
+echo "Tamanho do arquivo: $FILE_SIZE bytes"
+echo "Arquivo temporário salvo em: $TEMP_IMAGE"
 
-# Criar arquivo temporário para o payload
-TEMP_FILE=$(mktemp)
+# Criar arquivo temporário para o payload na pasta /tmp
+TEMP_FILE="/tmp/payload_$(date +%s).json"
 
 # Converter imagem para base64 e criar o payload JSON
 echo '{
@@ -28,10 +42,12 @@ echo '",
 }' >> "$TEMP_FILE"
 
 # Enviar para o endpoint usando o arquivo temporário
+echo "Enviando para $ENDPOINT/extract..."
 curl -X POST \
      -H "Content-Type: application/json" \
      -d "@$TEMP_FILE" \
-     https://extract.logt.com.br/extract
+     "$ENDPOINT/extract"
 
-# Limpar arquivos temporários
-rm "$TEMP_FILE" "$TEMP_IMAGE" 
+echo "Arquivos temporários mantidos em:"
+echo "- Imagem: $TEMP_IMAGE"
+echo "- Payload: $TEMP_FILE" 

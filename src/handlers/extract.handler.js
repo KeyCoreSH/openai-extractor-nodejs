@@ -1,20 +1,29 @@
-const openai = require('../config/openai.config');
+const aiClient = require('../config/openai.config');
 const FileUtils = require('../utils/file.utils');
 
 class ExtractHandler {
     static async extractTextFromImage(imageBase64) {
         try {
             console.log('Iniciando extração de texto da imagem...');
+            console.log('Tamanho do base64:', imageBase64.length);
             
-            const response = await openai.chat.completions.create({
-                model: "gpt-4o-mini",
+            const provider = process.env.AI_PROVIDER || 'openai';
+            const model = provider === 'openai' ? 'gpt-4o' : 'deepseek-chat';
+            
+            let textExtract = 'Extraia o texto desta imagem de CNH. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "registro_cnh": "", "data_nascimento": "", "validade": "", "categoria": "", "cpf": "", "numero_documento": "", "orgao_emissor": "", "uf": "" }. Ignore selos, assinaturas digitais e textos genéricos. Responda apenas com o JSON.';
+            
+            let requestConfig;
+            
+            // Usar o mesmo formato para ambos os provedores
+            requestConfig = {
+                model: model,
                 messages: [
                     {
                         role: "user",
                         content: [
                             { 
                                 type: "text", 
-                                text: "Extraia o texto desta imagem. Retorne apenas o texto extraído, sem formatação adicional. Se não conseguir extrair texto, retorne 'Nenhum texto encontrado'." 
+                                text: textExtract
                             },
                             {
                                 type: "image_url",
@@ -26,14 +35,19 @@ class ExtractHandler {
                         ]
                     }
                 ],
-                max_tokens: 1000,
-                temperature: 0.1
-            });
+                max_tokens: 10000,
+                temperature: 0.2,
+                response_format: { type: "text" }
+            };
 
-            console.log('Resposta da OpenAI recebida');
+            console.log('Enviando requisição para:', provider);
+            console.log('Configuração da requisição:', JSON.stringify(requestConfig, null, 2));
+            
+            const response = await aiClient.chat.completions.create(requestConfig);
+            console.log('Resposta recebida:', JSON.stringify(response, null, 2));
             
             if (!response.choices || !response.choices[0] || !response.choices[0].message) {
-                throw new Error('Resposta inválida da OpenAI');
+                throw new Error('Resposta inválida do provedor de IA');
             }
 
             const extractedText = response.choices[0].message.content;
@@ -46,7 +60,7 @@ class ExtractHandler {
         } catch (error) {
             console.error('Erro detalhado ao extrair texto:', error);
             if (error.response) {
-                console.error('Resposta de erro da OpenAI:', error.response.data);
+                console.error('Resposta de erro:', error.response.data);
             }
             throw new Error(`Falha ao extrair texto da imagem: ${error.message}`);
         }
@@ -76,18 +90,21 @@ class ExtractHandler {
             const extractedText = await this.extractTextFromImage(imageBase64);
             console.log('Texto extraído com sucesso');
 
-            // Salvar texto extraído no S3
-            console.log('Salvando texto no S3...');
-            const buffer = Buffer.from(extractedText, 'utf-8');
-            const result = await FileUtils.uploadToS3(buffer, `${filename}.txt`, 'extracted');
-            console.log('Texto salvo no S3:', result.key);
+            // Salvar imagem no S3
+            console.log('Salvando imagem no S3...');
+            const imageBuffer = Buffer.from(imageBase64, 'base64');
+            const s3Result = await FileUtils.uploadToS3(imageBuffer, filename, 'images');
+            console.log('Imagem salva no S3:', s3Result.key);
+
+            // Construir URL do S3
+            const s3Url = `https://${process.env.S3_BUCKET}.s3.${process.env.S3_REGION}.amazonaws.com/${s3Result.key}`;
 
             return {
                 success: true,
-                message: 'Texto extraído com sucesso',
+                message: 'Processamento concluído com sucesso',
                 data: {
                     extractedText,
-                    s3Location: result.key
+                    imageUrl: s3Url
                 }
             };
         } catch (error) {

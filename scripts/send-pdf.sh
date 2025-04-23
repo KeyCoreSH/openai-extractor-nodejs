@@ -6,6 +6,19 @@ if [ ! -f "example/CNH-e.pdf" ]; then
     exit 1
 fi
 
+# Definir o endpoint baseado no ambiente
+ENDPOINT=""
+if [ "$1" == "local" ]; then
+    ENDPOINT="http://localhost:3008"
+elif [ "$1" == "prod" ]; then
+    ENDPOINT="https://extract.logt.com.br"
+else
+    echo "Uso: $0 [local|prod]"
+    echo "  local - Usa o servidor local (http://localhost:3008)"
+    echo "  prod  - Usa o servidor de produção (https://extract.logt.com.br)"
+    exit 1
+fi
+
 # Criar arquivo temporário para o PDF otimizado
 TEMP_PDF=$(mktemp).pdf
 
@@ -33,10 +46,11 @@ echo '",
 }' >> "$TEMP_FILE"
 
 # Enviar para o endpoint usando o arquivo temporário
+echo "Enviando para $ENDPOINT/extract..."
 curl -X POST \
      -H "Content-Type: application/json" \
      -d "@$TEMP_FILE" \
-     https://extract.logt.com.br/extract
+     "$ENDPOINT/extract"
 
 # Limpar arquivos temporários
 rm "$TEMP_FILE" "$TEMP_PDF" 

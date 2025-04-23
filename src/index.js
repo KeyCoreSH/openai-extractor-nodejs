@@ -49,6 +49,7 @@ app.get('/', (req, res) => {
 app.post('/extract', async (req, res) => {
     try {
         const { pdfBase64, filename } = req.body;
+        // console.log('=> req.body ', req.body);
 
         if (!pdfBase64 || !filename) {
             return res.status(400).json({
@@ -56,7 +57,7 @@ app.post('/extract', async (req, res) => {
                 message: 'pdfBase64 e filename são obrigatórios'
             });
         }
-
+        console.log('=> filename ', filename);
         const result = await ExtractHandler.handleExtraction(pdfBase64, filename);
         res.json(result);
     } catch (error) {
