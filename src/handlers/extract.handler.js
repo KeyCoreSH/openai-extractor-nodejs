@@ -41,10 +41,10 @@ class ExtractHandler {
             };
 
             console.log('Enviando requisição para:', provider);
-            console.log('Configuração da requisição:', JSON.stringify(requestConfig, null, 2));
+            // console.log('Configuração da requisição:', JSON.stringify(requestConfig, null, 2));
             
             const response = await aiClient.chat.completions.create(requestConfig);
-            console.log('Resposta recebida:', JSON.stringify(response, null, 2));
+            // console.log('Resposta recebida:', JSON.stringify(response, null, 2));
             
             if (!response.choices || !response.choices[0] || !response.choices[0].message) {
                 throw new Error('Resposta inválida do provedor de IA');
