@@ -10,7 +10,7 @@ class ExtractHandler {
             const provider = process.env.AI_PROVIDER || 'openai';
             const model = provider === 'openai' ? 'gpt-4o' : 'deepseek-chat';
             
-            let textExtract = 'Extraia o texto desta imagem de CNH. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "registro_cnh": "", "data_nascimento": "", "validade": "", "categoria": "", "cpf": "", "numero_documento": "", "orgao_emissor": "", "uf": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown.';
+            let textExtract = 'Extraia o texto desta imagem de CNH. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "registro_cnh": "", "data_nascimento": "", "validade": "", "categoria": "", "cpf": "", "numero_documento": "", "orgao_emissor": "", "uf": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.';
             
             let requestConfig;
             
