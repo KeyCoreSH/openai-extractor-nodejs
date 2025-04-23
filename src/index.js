@@ -15,7 +15,8 @@ const bodyParser = require('body-parser');
 const ExtractHandler = require('./handlers/extract.handler');
 
 const app = express();
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(bodyParser.json({ limit: '50mb' }));
+app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
 // Rota GET para a raiz
 app.get('/', (req, res) => {
