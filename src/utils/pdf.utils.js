@@ -8,25 +8,27 @@ const FileUtils = require('./file.utils');
 class PdfUtils {
     static async checkDependencies() {
         return new Promise((resolve) => {
-            // Detectar o sistema operacional
-            const isMacOS = process.platform === 'darwin';
-            const isLinux = process.platform === 'linux';
+            // Verificar se é Ubuntu
+            exec('lsb_release -i', async (lsbError) => {
+                if (lsbError) {
+                    console.error('Este sistema não é Ubuntu. Por favor, use Ubuntu para executar esta aplicação.');
+                    resolve(false);
+                    return;
+                }
 
-            if (isMacOS) {
-                // Verificar se o Homebrew está instalado
-                exec('which brew', async (brewError) => {
-                    if (brewError) {
-                        console.error('Homebrew não está instalado. Por favor, instale o Homebrew primeiro:');
-                        console.error('/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"');
+                // Verificar se é apt-get
+                exec('which apt-get', async (aptError) => {
+                    if (aptError) {
+                        console.error('apt-get não encontrado. Este sistema não é compatível.');
                         resolve(false);
                         return;
                     }
 
                     // Verificar e instalar cairo
-                    exec('brew list cairo', async (cairoError) => {
+                    exec('dpkg -l | grep libcairo2', async (cairoError) => {
                         if (cairoError) {
                             console.log('Instalando cairo...');
-                            exec('brew install cairo', (installError) => {
+                            exec('sudo apt-get update && sudo apt-get install -y libcairo2-dev', (installError) => {
                                 if (installError) {
                                     console.error('Erro ao instalar cairo:', installError);
                                     resolve(false);
@@ -37,10 +39,10 @@ class PdfUtils {
                         }
 
                         // Verificar e instalar poppler
-                        exec('brew list poppler', async (popplerError) => {
+                        exec('dpkg -l | grep poppler-utils', async (popplerError) => {
                             if (popplerError) {
                                 console.log('Instalando poppler...');
-                                exec('brew install poppler', (installError) => {
+                                exec('sudo apt-get update && sudo apt-get install -y poppler-utils', (installError) => {
                                     if (installError) {
                                         console.error('Erro ao instalar poppler:', installError);
                                         resolve(false);
@@ -55,91 +57,7 @@ class PdfUtils {
                         });
                     });
                 });
-            } else if (isLinux) {
-                // Verificar se é Ubuntu/Debian
-                exec('which apt-get', async (aptError) => {
-                    if (!aptError) {
-                        // Verificar e instalar cairo
-                        exec('dpkg -l | grep libcairo2', async (cairoError) => {
-                            if (cairoError) {
-                                console.log('Instalando cairo...');
-                                exec('sudo apt-get update && sudo apt-get install -y libcairo2-dev', (installError) => {
-                                    if (installError) {
-                                        console.error('Erro ao instalar cairo:', installError);
-                                        resolve(false);
-                                        return;
-                                    }
-                                    console.log('Cairo instalado com sucesso');
-                                });
-                            }
-
-                            // Verificar e instalar poppler
-                            exec('dpkg -l | grep poppler-utils', async (popplerError) => {
-                                if (popplerError) {
-                                    console.log('Instalando poppler...');
-                                    exec('sudo apt-get update && sudo apt-get install -y poppler-utils', (installError) => {
-                                        if (installError) {
-                                            console.error('Erro ao instalar poppler:', installError);
-                                            resolve(false);
-                                            return;
-                                        }
-                                        console.log('Poppler instalado com sucesso');
-                                        resolve(true);
-                                    });
-                                } else {
-                                    resolve(true);
-                                }
-                            });
-                        });
-                    } else {
-                        // Verificar se é CentOS/RHEL
-                        exec('which yum', async (yumError) => {
-                            if (!yumError) {
-                                // Verificar e instalar cairo
-                                exec('rpm -q cairo', async (cairoError) => {
-                                    if (cairoError) {
-                                        console.log('Instalando cairo...');
-                                        exec('sudo yum install -y cairo-devel', (installError) => {
-                                            if (installError) {
-                                                console.error('Erro ao instalar cairo:', installError);
-                                                resolve(false);
-                                                return;
-                                            }
-                                            console.log('Cairo instalado com sucesso');
-                                        });
-                                    }
-
-                                    // Verificar e instalar poppler
-                                    exec('rpm -q poppler-utils', async (popplerError) => {
-                                        if (popplerError) {
-                                            console.log('Instalando poppler...');
-                                            exec('sudo yum install -y poppler-utils', (installError) => {
-                                                if (installError) {
-                                                    console.error('Erro ao instalar poppler:', installError);
-                                                    resolve(false);
-                                                    return;
-                                                }
-                                                console.log('Poppler instalado com sucesso');
-                                                resolve(true);
-                                            });
-                                        } else {
-                                            resolve(true);
-                                        }
-                                    });
-                                });
-                            } else {
-                                console.error('Sistema operacional não suportado ou gerenciador de pacotes não encontrado');
-                                console.error('Para Ubuntu/Debian: sudo apt-get install libcairo2-dev poppler-utils');
-                                console.error('Para CentOS/RHEL: sudo yum install cairo-devel poppler-utils');
-                                resolve(false);
-                            }
-                        });
-                    }
-                });
-            } else {
-                console.error('Sistema operacional não suportado');
-                resolve(false);
-            }
+            });
         });
     }
 
@@ -148,7 +66,7 @@ class PdfUtils {
             // Verificar e instalar dependências
             const dependenciesInstalled = await this.checkDependencies();
             if (!dependenciesInstalled) {
-                throw new Error('Falha ao instalar dependências necessárias. Por favor, instale manualmente as dependências.');
+                throw new Error('Falha ao instalar dependências necessárias. Por favor, instale manualmente: sudo apt-get install libcairo2-dev poppler-utils');
             }
 
             // Criar diretório temporário se não existir
