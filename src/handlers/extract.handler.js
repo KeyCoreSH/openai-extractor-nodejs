@@ -56,7 +56,19 @@ class ExtractHandler {
                 throw new Error('Nenhum texto extraído da imagem');
             }
 
-            return extractedText;
+            // Converter a string JSON escapada em um objeto JSON válido
+            let jsonData;
+            try {
+                // Primeiro, remover as barras invertidas de escape
+                const cleanJsonString = extractedText.replace(/\\/g, '');
+                // Converter para objeto JSON
+                jsonData = JSON.parse(cleanJsonString);
+            } catch (parseError) {
+                console.error('Erro ao converter JSON:', parseError);
+                throw new Error('Falha ao converter dados extraídos para JSON');
+            }
+
+            return jsonData;
         } catch (error) {
             console.error('Erro detalhado ao extrair texto:', error);
             if (error.response) {
