@@ -2,7 +2,6 @@ const fs = require('fs');
 const path = require('path');
 const { promisify } = require('util');
 const { exec } = require('child_process');
-const pdf = require('pdf-poppler');
 const FileUtils = require('./file.utils');
 
 class PdfUtils {
@@ -24,37 +23,22 @@ class PdfUtils {
                         return;
                     }
 
-                    // Verificar e instalar cairo
-                    exec('dpkg -l | grep libcairo2', async (cairoError) => {
-                        if (cairoError) {
-                            console.log('Instalando cairo...');
-                            exec('sudo apt-get update && sudo apt-get install -y libcairo2-dev', (installError) => {
+                    // Verificar e instalar poppler-utils
+                    exec('dpkg -l | grep poppler-utils', async (popplerError) => {
+                        if (popplerError) {
+                            console.log('Instalando poppler-utils...');
+                            exec('sudo apt-get update && sudo apt-get install -y poppler-utils', (installError) => {
                                 if (installError) {
-                                    console.error('Erro ao instalar cairo:', installError);
+                                    console.error('Erro ao instalar poppler-utils:', installError);
                                     resolve(false);
                                     return;
                                 }
-                                console.log('Cairo instalado com sucesso');
-                            });
-                        }
-
-                        // Verificar e instalar poppler
-                        exec('dpkg -l | grep poppler-utils', async (popplerError) => {
-                            if (popplerError) {
-                                console.log('Instalando poppler...');
-                                exec('sudo apt-get update && sudo apt-get install -y poppler-utils', (installError) => {
-                                    if (installError) {
-                                        console.error('Erro ao instalar poppler:', installError);
-                                        resolve(false);
-                                        return;
-                                    }
-                                    console.log('Poppler instalado com sucesso');
-                                    resolve(true);
-                                });
-                            } else {
+                                console.log('Poppler-utils instalado com sucesso');
                                 resolve(true);
-                            }
-                        });
+                            });
+                        } else {
+                            resolve(true);
+                        }
                     });
                 });
             });
@@ -66,7 +50,7 @@ class PdfUtils {
             // Verificar e instalar dependências
             const dependenciesInstalled = await this.checkDependencies();
             if (!dependenciesInstalled) {
-                throw new Error('Falha ao instalar dependências necessárias. Por favor, instale manualmente: sudo apt-get install libcairo2-dev poppler-utils');
+                throw new Error('Falha ao instalar dependências necessárias. Por favor, instale manualmente: sudo apt-get install poppler-utils');
             }
 
             // Criar diretório temporário se não existir
@@ -83,18 +67,19 @@ class PdfUtils {
             const pdfBuffer = Buffer.from(pdfBase64, 'base64');
             await promisify(fs.writeFile)(pdfPath, pdfBuffer);
 
-            // Configurar opções de conversão
-            const opts = {
-                format: 'png',
-                out_dir: outputDir,
-                out_prefix: `temp_${timestamp}`,
-                page: 1, // Converter apenas a primeira página
-                scale: 2.0, // Aumentar a resolução
-                dpi: 300 // Alta qualidade
-            };
-
-            // Converter PDF para imagem
-            await pdf.convert(pdfPath, opts);
+            // Converter PDF para PNG usando pdftoppm
+            const command = `pdftoppm -png -singlefile -r 300 -scale-to 2000 "${pdfPath}" "${outputPath.replace('.png', '')}"`;
+            
+            await new Promise((resolve, reject) => {
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error('Erro ao executar pdftoppm:', error);
+                        reject(error);
+                        return;
+                    }
+                    resolve();
+                });
+            });
 
             // Verificar se a imagem foi gerada
             if (!fs.existsSync(outputPath)) {
