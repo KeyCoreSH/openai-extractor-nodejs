@@ -12,9 +12,11 @@ if (missingEnvVars.length > 0) {
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 const ExtractHandler = require('./handlers/extract.handler');
 
 const app = express();
+app.use(cors());
 app.use(bodyParser.json({ limit: '50mb' }));
 app.use(bodyParser.urlencoded({ limit: '50mb', extended: true }));
 
