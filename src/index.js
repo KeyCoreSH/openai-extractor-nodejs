@@ -51,28 +51,19 @@ app.get('/', (req, res) => {
 
 app.post('/extract', async (req, res) => {
     try {
-        const { pdfBase64, filename, typeDoc } = req.body;
+        const { pdfBase64, filename, prompt } = req.body;
 
-        if (!pdfBase64 || !filename || !typeDoc) {
+        if (!pdfBase64 || !filename || !prompt) {
             return res.status(400).json({
                 success: false,
-                message: 'pdfBase64, filename e typeDoc são obrigatórios'
-            });
-        }
-
-        // Validar se o typeDoc é um dos tipos suportados
-        const supportedTypes = ['CNH', 'RG', 'CPF', 'comprovante_de_residencia', 'ANTT', 'CNPJ', 'CRLV'];
-        if (!supportedTypes.includes(typeDoc)) {
-            return res.status(400).json({
-                success: false,
-                message: `Tipo de documento não suportado. Tipos suportados: ${supportedTypes.join(', ')}`
+                message: 'pdfBase64, filename e prompt são obrigatórios'
             });
         }
 
         console.log('=> filename:', filename);
-        console.log('=> typeDoc:', typeDoc);
+        console.log('=> prompt:', prompt);
         
-        const result = await ExtractHandler.handleExtraction(pdfBase64, filename, typeDoc);
+        const result = await ExtractHandler.handleExtraction(pdfBase64, filename, prompt);
         res.json(result);
     } catch (error) {
         console.error('Erro na API:', error);

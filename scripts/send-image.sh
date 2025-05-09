@@ -13,28 +13,25 @@ if [ "$1" == "local" ]; then
 elif [ "$1" == "prod" ]; then
     ENDPOINT="https://extract.logt.com.br"
 else
-    echo "Uso: $0 [local|prod] [tipo_documento]"
+    echo "Uso: $0 [local|prod] [tipo_documento] [prompt]"
     echo "  local - Usa o servidor local (http://localhost:3008)"
     echo "  prod  - Usa o servidor de produção (https://extract.logt.com.br)"
-    echo "  tipo_documento - Tipo do documento (CNH, RG, CPF, comprovante_de_residencia, ANTT, CNPJ, CRLV)"
+    echo "  tipo_documento - Tipo do documento (apenas para nome do arquivo)"
+    echo "  prompt - (opcional) prompt customizado para extração"
     exit 1
 fi
 
 # Verificar se o tipo de documento foi fornecido
 if [ -z "$2" ]; then
     echo "Erro: Tipo de documento não fornecido"
-    echo "Tipos suportados: CNH, RG, CPF, comprovante_de_residencia, ANTT, CNPJ, CRLV"
     exit 1
 fi
 
 TYPE_DOC="$2"
+PROMPT="$3"
 
-# Validar o tipo de documento
-VALID_TYPES=("CNH" "RG" "CPF" "comprovante_de_residencia" "ANTT" "CNPJ" "CRLV")
-if [[ ! " ${VALID_TYPES[@]} " =~ " ${TYPE_DOC} " ]]; then
-    echo "Erro: Tipo de documento inválido"
-    echo "Tipos suportados: ${VALID_TYPES[*]}"
-    exit 1
+if [ -z "$PROMPT" ]; then
+    PROMPT='Extraia o texto desta imagem de CNH. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "registro_cnh": "", "data_nascimento": "", "validade": "", "categoria": "", "cpf": "", "numero_documento": "", "orgao_emissor": "", "uf": "" }.'
 fi
 
 # Criar arquivo temporário para a imagem na pasta /tmp
@@ -52,13 +49,15 @@ echo "Arquivo temporário salvo em: $TEMP_IMAGE"
 TEMP_FILE="/tmp/payload_$(date +%s).json"
 
 # Converter imagem para base64 e criar o payload JSON
-echo '{
-    "pdfBase64": "' > "$TEMP_FILE"
-base64 -i "$TEMP_IMAGE" | tr -d '\n' >> "$TEMP_FILE"
-echo '",
-    "filename": "cnh-image.png",
-    "typeDoc": "'"$TYPE_DOC"'"
-}' >> "$TEMP_FILE"
+{
+    echo '{'
+    echo '  "pdfBase64": "'
+    base64 -i "$TEMP_IMAGE" | tr -d '\n'
+    echo '",'
+    echo '  "filename": "cnh-image.png",'
+    echo '  "prompt": '"$(jq -Rs . <<< "$PROMPT")
+    echo '}'
+} > "$TEMP_FILE"
 
 # Enviar para o endpoint usando o arquivo temporário
 echo "Enviando para $ENDPOINT/extract..."

@@ -3,34 +3,17 @@ const FileUtils = require('../utils/file.utils');
 const PdfUtils = require('../utils/pdf.utils');
 
 class ExtractHandler {
-    static getExtractTextByType(typeDoc) {
-        const extractTexts = {
-            'CNH': 'Extraia o texto desta imagem de CNH. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "registro_cnh": "", "data_nascimento": "", "validade": "", "categoria": "", "cpf": "", "numero_documento": "", "orgao_emissor": "", "uf": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'RG': 'Extraia o texto desta imagem de RG. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "numero_documento": "", "orgao_emissor": "", "uf": "", "data_nascimento": "", "data_emissao": "", "naturalidade": "", "nome_mae": "", "nome_pai": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'CPF': 'Extraia o texto desta imagem de CPF. Retorne os dados estruturados como JSON no seguinte formato: { "numero_cpf": "", "nome_completo": "", "data_nascimento": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'comprovante_de_residencia': 'Extraia o texto desta imagem de comprovante de residência. Retorne os dados estruturados como JSON no seguinte formato: { "nome_completo": "", "endereco": "", "bairro": "", "cidade": "", "uf": "", "cep": "", "data_emissao": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'ANTT': 'Extraia o texto desta imagem de ANTT. Retorne os dados estruturados como JSON no seguinte formato: { "numero_registro": "", "nome_completo": "", "cpf": "", "categoria": "", "data_emissao": "", "data_validade": "", "orgao_emissor": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'CNPJ': 'Extraia o texto desta imagem de CNPJ. Retorne os dados estruturados como JSON no seguinte formato: { "razao_social": "", "nome_fantasia": "", "cnpj": "", "data_abertura": "", "endereco": "", "bairro": "", "cidade": "", "uf": "", "cep": "", "telefone": "", "email": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.',
-            'CRLV': 'Extraia o texto desta imagem de CRLV. Retorne os dados estruturados como JSON no seguinte formato: { "placa": "", "renavam": "", "chassi": "", "marca_modelo": "", "ano_fabricacao": "", "ano_modelo": "", "cor": "", "proprietario": "", "cpf_cnpj": "", "endereco": "", "bairro": "", "cidade": "", "uf": "", "cep": "" }. Ignore selos, assinaturas digitais e textos genéricos. Não use blocos de código. Responda somente com o JSON puro, sem formatação Markdown. sem quebra de linha.'
-        };
-
-        if (!extractTexts[typeDoc]) {
-            throw new Error(`Tipo de documento não suportado: ${typeDoc}`);
-        }
-
-        return extractTexts[typeDoc];
-    }
-
-    static async extractTextFromImage(imageBase64, typeDoc) {
+    static async extractTextFromImage(imageBase64, prompt) {
         try {
             console.log('Iniciando extração de texto da imagem...');
-            console.log('Tipo de documento:', typeDoc);
+            console.log('Prompt:', prompt);
             console.log('Tamanho do base64:', imageBase64.length);
             
             const provider = process.env.AI_PROVIDER || 'openai';
             const model = provider === 'openai' ? 'gpt-4o' : 'deepseek-chat';
             
-            const textExtract = this.getExtractTextByType(typeDoc);
+            // Usar prompt recebido
+            const textExtract = prompt || 'Extraia o texto desta imagem. Retorne os dados estruturados como JSON.';
             
             let requestConfig;
             
@@ -96,10 +79,10 @@ class ExtractHandler {
         }
     }
 
-    static async handleExtraction(pdfBase64, filename, typeDoc) {
+    static async handleExtraction(pdfBase64, filename, prompt) {
         try {
             console.log('Iniciando processamento do arquivo:', filename);
-            console.log('Tipo de documento:', typeDoc);
+            console.log('Prompt:', prompt);
             
             // Validar entrada
             if (!FileUtils.isBase64(pdfBase64)) {
@@ -119,7 +102,7 @@ class ExtractHandler {
 
             // Extrair texto
             console.log('Extraindo texto...');
-            const extractedText = await this.extractTextFromImage(imageBase64, typeDoc);
+            const extractedText = await this.extractTextFromImage(imageBase64, prompt);
             console.log('Texto extraído com sucesso');
 
             // Salvar imagem no S3
